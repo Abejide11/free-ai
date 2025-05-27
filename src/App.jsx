@@ -1,37 +1,26 @@
-import React, { useState, useEffect } from 'react';
-
-const MAX_TRIALS = 50;
+import React, { useState } from 'react';
 
 const App = () => {
   const [userInput, setUserInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [trials, setTrials] = useState(() => {
-    const saved = localStorage.getItem('chat_trials');
-    return saved ? parseInt(saved, 10) : 0;
-  });
-
-  useEffect(() => {
-    localStorage.setItem('chat_trials', trials);
-  }, [trials]);
 
   const callOpenRouter = async () => {
-    if (!userInput.trim() || trials >= MAX_TRIALS) return;
+    if (!userInput.trim()) return;
 
     const newMessages = [...messages, { role: 'user', content: userInput }];
     setMessages(newMessages);
     setLoading(true);
-    setTrials(prev => prev + 1);
 
     try {
       const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
         },
         body: JSON.stringify({
-          model: 'meta-llama/llama-3.3-8b-instruct:free',
+          model: 'opengvlab/internvl3-14b:free',
           messages: newMessages,
         }),
       });
@@ -57,12 +46,10 @@ const App = () => {
   };
 
   const handleKeyDown = (e) => {
-    if (e.key === 'Enter' && !loading && trials < MAX_TRIALS) {
+    if (e.key === 'Enter' && !loading) {
       callOpenRouter();
     }
   };
-
-  const isLimitReached = trials >= MAX_TRIALS;
 
   return (
     <div style={styles.container}>
@@ -71,7 +58,7 @@ const App = () => {
       <div style={styles.messages}>
         {messages.map((msg, idx) => (
           <div key={idx} style={{ ...styles.messageRow, justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{ 
+            <div style={{
               ...styles.bubble,
               backgroundColor: msg.role === 'user' ? '#dbeafe' : '#bbf7d0',
               textAlign: msg.role === 'user' ? 'right' : 'left'
@@ -88,8 +75,8 @@ const App = () => {
         onChange={(e) => setUserInput(e.target.value)}
         onKeyDown={handleKeyDown}
         style={styles.input}
-        placeholder={isLimitReached ? 'Trial limit reached' : 'Type your message...'}
-        disabled={loading || isLimitReached}
+        placeholder="Type your message..."
+        disabled={loading}
         autoFocus
       />
 
@@ -97,19 +84,13 @@ const App = () => {
         onClick={callOpenRouter}
         style={{
           ...styles.button,
-          backgroundColor: loading || isLimitReached ? '#93c5fd' : '#2563eb',
-          cursor: loading || isLimitReached ? 'not-allowed' : 'pointer',
+          backgroundColor: loading ? '#93c5fd' : '#2563eb',
+          cursor: loading ? 'not-allowed' : 'pointer',
         }}
-        disabled={loading || isLimitReached}
+        disabled={loading}
       >
         {loading ? 'Loading...' : 'Send'}
       </button>
-
-      {isLimitReached && (
-        <div style={styles.warning}>
-          Trial limit of 50 messages reached. Refresh or upgrade to continue.
-        </div>
-      )}
     </div>
   );
 };
@@ -156,12 +137,6 @@ const styles = {
     color: 'white',
     border: 'none',
     borderRadius: '4px',
-  },
-  warning: {
-    color: 'red',
-    fontSize: '0.875rem',
-    marginTop: '4px',
-    textAlign: 'center',
   },
 };
 
