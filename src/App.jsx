@@ -1,12 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const MAX_TRIALS = 50;
 
-const OpenRouterChat = () => {
+const App = () => {
   const [userInput, setUserInput] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [trials, setTrials] = useState(0);
+  const [trials, setTrials] = useState(() => {
+    const saved = localStorage.getItem('chat_trials');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('chat_trials', trials);
+  }, [trials]);
 
   const callOpenRouter = async () => {
     if (!userInput.trim() || trials >= MAX_TRIALS) return;
@@ -21,7 +28,7 @@ const OpenRouterChat = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer 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',
+          'Authorization': 'Bearer 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',
         },
         body: JSON.stringify({
           model: 'meta-llama/llama-3.3-8b-instruct:free',
@@ -58,14 +65,18 @@ const OpenRouterChat = () => {
   const isLimitReached = trials >= MAX_TRIALS;
 
   return (
-    <div className="chat-container">
-      <h1 className="chat-title">AI Chat</h1>
+    <div style={styles.container}>
+      <h1 style={styles.title}>AI Chat</h1>
 
-      <div className="chat-messages">
+      <div style={styles.messages}>
         {messages.map((msg, idx) => (
-          <div key={idx} className={`message-row ${msg.role}`}>
-            <div className={`message-bubble ${msg.role}`}>
-              <strong>{msg.role === 'user' ? 'You' : 'AI assisant'}:</strong> {msg.content}
+          <div key={idx} style={{ ...styles.messageRow, justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{ 
+              ...styles.bubble,
+              backgroundColor: msg.role === 'user' ? '#dbeafe' : '#bbf7d0',
+              textAlign: msg.role === 'user' ? 'right' : 'left'
+            }}>
+              <strong>{msg.role === 'user' ? 'You' : 'AI'}:</strong> {msg.content}
             </div>
           </div>
         ))}
@@ -76,7 +87,7 @@ const OpenRouterChat = () => {
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         onKeyDown={handleKeyDown}
-        className="chat-input"
+        style={styles.input}
         placeholder={isLimitReached ? 'Trial limit reached' : 'Type your message...'}
         disabled={loading || isLimitReached}
         autoFocus
@@ -84,19 +95,74 @@ const OpenRouterChat = () => {
 
       <button
         onClick={callOpenRouter}
-        className="chat-button"
+        style={{
+          ...styles.button,
+          backgroundColor: loading || isLimitReached ? '#93c5fd' : '#2563eb',
+          cursor: loading || isLimitReached ? 'not-allowed' : 'pointer',
+        }}
         disabled={loading || isLimitReached}
       >
         {loading ? 'Loading...' : 'Send'}
       </button>
 
       {isLimitReached && (
-        <div className="chat-limit-warning">
-          Trial limit of 50 messages reached. Upgrade or restart to continue.
+        <div style={styles.warning}>
+          Trial limit of 50 messages reached. Refresh or upgrade to continue.
         </div>
       )}
     </div>
   );
 };
 
-export default OpenRouterChat;
+const styles = {
+  container: {
+    padding: '16px',
+    maxWidth: '600px',
+    margin: '0 auto',
+    fontFamily: 'Arial, sans-serif',
+  },
+  title: {
+    fontSize: '1.5rem',
+    fontWeight: 'bold',
+    marginBottom: '1rem',
+  },
+  messages: {
+    marginTop: '1rem',
+    maxHeight: '400px',
+    overflowY: 'auto',
+    paddingRight: '8px',
+    marginBottom: '8px',
+  },
+  messageRow: {
+    display: 'flex',
+    marginBottom: '8px',
+  },
+  bubble: {
+    padding: '8px',
+    borderRadius: '8px',
+    maxWidth: '70%',
+    whiteSpace: 'pre-wrap',
+  },
+  input: {
+    width: '100%',
+    padding: '8px',
+    marginBottom: '8px',
+    border: '1px solid #ccc',
+    borderRadius: '4px',
+  },
+  button: {
+    width: '100%',
+    padding: '10px',
+    color: 'white',
+    border: 'none',
+    borderRadius: '4px',
+  },
+  warning: {
+    color: 'red',
+    fontSize: '0.875rem',
+    marginTop: '4px',
+    textAlign: 'center',
+  },
+};
+
+export default App;
